@@ -24,7 +24,9 @@ export default function Users() {
                 src={user.userImg}
                 alt="User's image"
               />
-              <span className="font-semibold">{user.email}</span>
+              <span className="font-semibold">
+                {user.userName || user.email}
+              </span>
               <span className="text-yellow-300 text-lg">★</span>
             </div>
           </div>

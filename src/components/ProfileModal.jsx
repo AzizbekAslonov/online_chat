@@ -1,15 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Rodal from "rodal";
+import {
+  useGetUserQuery,
+  useLazyGetUsersQuery,
+  useUpdateUserMutation,
+} from "../store/services/userServices";
+import { toast } from "react-toastify";
 
 export default function ProfileModal({ showModal, setShowModal }) {
   const [inputValue, setInputValue] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [file, setFile] = useState(null);
-  const { profile } = useSelector((state) => state.app);
+  const [localFile, setLocalFile] = useState("");
+  const { user } = useSelector((state) => state.app);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const fileRef = useRef();
+  const { data: profile, refetch } = useGetUserQuery(user.user?.id);
+  const [update, { isLoading }] = useUpdateUserMutation();
+  const [getUsers, {}] = useLazyGetUsersQuery();
+
   const handleChange = (event) => {
     const value = event.target.value;
     setInputValue(value);
@@ -21,17 +33,38 @@ export default function ProfileModal({ showModal, setShowModal }) {
     }
   };
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
+    const file = e.target.files[0];
+    setFile(file);
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      setLocalFile(e.target.result);
+    };
+    reader.readAsDataURL(file);
   };
   const saveHandler = () => {
     const formdata = new FormData();
-    formdata.append("nickName", inputValue);
-    formdata.append("avatar", file);
-    navigate("/");
+    formdata.append("userName", inputValue);
+    formdata.append("img", file);
+
+    update(formdata)
+      .unwrap()
+      .then(() => {
+        // refetch();
+        setShowModal(false);
+        toast.success("Updated");
+        getUsers();
+      });
   };
+
   useEffect(() => {
-    // console.log(profile);
+    if (profile) {
+      setInputValue(profile.userName);
+    }
   }, [profile]);
+
+  if (!profile) return <p>Loading...</p>;
+
   return (
     <Rodal
       width={700}
@@ -62,10 +95,22 @@ export default function ProfileModal({ showModal, setShowModal }) {
           Upload your avatar:
         </label>
         <br />
+        <div
+          onClick={() => fileRef.current.click()}
+          className="w-[120px] h-[120px] rounded-full"
+        >
+          <img
+            src={localFile || profile.userImg}
+            className="max-w-full max-h-full object-cover"
+            alt=""
+          />
+        </div>
         <input
+          ref={fileRef}
           onChange={handleFileChange}
           aria-label="eng"
           type="file"
+          hidden
           id="file-input"
           lang="en"
         />

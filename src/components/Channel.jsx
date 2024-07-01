@@ -6,6 +6,7 @@ import { faDownLong, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import {
+  useGetMessagesQuery,
   useLazyGetMessagesQuery,
   useSendFileMutation,
   useSendMessageMutation,
@@ -20,9 +21,9 @@ export default function Channels() {
   const [action, setAction] = useState("");
   const [postMessage, { isLoading: messageLoading }] = useSendMessageMutation();
   const [postFile, { isLoading: fileLoading }] = useSendFileMutation();
-  const [getMessages, { data, isLoading, isSuccess }] =
-    useLazyGetMessagesQuery();
-
+  // const [getMessages, { data, isLoading, isFetching,  }] =
+  //   useLazyGetMessagesQuery();
+  const { data, isLoading, isFetching, refetch } = useGetMessagesQuery();
   const sendMessage = () => {
     const file = fileRef.current.files[0];
     if (!value && !file) return toast.error("Text is required");
@@ -36,7 +37,7 @@ export default function Channels() {
           fileRef.current.value = "";
           setValue("");
           setAction("FILE");
-          getMessages();
+          refetch();
         });
     } else if (value) {
       postMessage({ text: value })
@@ -44,7 +45,7 @@ export default function Channels() {
         .then(() => {
           setValue("");
           setAction("MESSAGE");
-          getMessages();
+          refetch();
         });
     }
   };
@@ -52,7 +53,6 @@ export default function Channels() {
   useEffect(() => {
     if (action === "MESSAGE" || action === "FILE") {
       scrollToBottom();
-
       setAction("");
     }
 
@@ -73,7 +73,7 @@ export default function Channels() {
         <h1>G53</h1>
         <small className="italic">{users?.length} members</small>
       </div>
-      <Messages action={action} scrollToBottom={scrollToBottom} />
+      <Messages data={data} scrollToBottom={scrollToBottom} />
       <div ref={blockRef}></div>
       <div className="w-[70%] p-2 bg-saidbar-background gap-3 flex justify-between text-white absolute bottom-0 fixed ">
         <button
